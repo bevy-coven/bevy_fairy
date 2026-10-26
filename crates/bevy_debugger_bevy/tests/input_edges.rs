@@ -134,6 +134,18 @@ fn a_tap_presses_for_one_frame_and_releases_the_next() {
         Edges::default(),
         "and leave nothing behind afterwards: {frames:?}"
     );
+
+    // **Queued is not applied, and the counter says which.** A caller whose injections are never
+    // folded -- the failure this crate asserts about for a missing `InputPlugin` -- could not tell
+    // the two apart, because `bevy_debugger/input` answers `success: true` at the queue. One tap is
+    // a press written on the first frame and a release written on the second: two, not one, and
+    // nothing at all if `apply_pending_input` is not running.
+    let pending = app.world().resource::<PendingInput>();
+    assert_eq!(
+        pending.applied, 2,
+        "a tap writes a press and then a release, and both are counted"
+    );
+    assert_eq!(pending.queued(), 0, "and nothing is left waiting");
 }
 
 /// **Misordered, an injected key now arrives a frame late rather than never** — and the difference
