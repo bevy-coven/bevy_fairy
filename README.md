@@ -78,7 +78,7 @@ It cannot see frame time, CPU or memory: BRP does not report them, and the tools
 
 ## Part of the Coven
 
-`bevy_fairy` is one of the [crates of the Bevy Coven](https://github.com/bevy-coven): the editor, [Grimoire](https://github.com/bevy-coven/bevy_grimoire), links this plugin behind its `debugger` feature, so an agent can look at the editor itself the same way it looks at a game. [How to use it in Grimoire](https://bevy-coven.github.io/crates/bevy_fairy.html#use-it-in-grimoire) is on the crate's page in [the book](https://bevy-coven.github.io/).
+`bevy_fairy` is one of the [crates of the Bevy Coven](https://github.com/bevy-coven): the editor, [the Cauldron](https://github.com/bevy-coven/bevy_grimoire), links this plugin behind its `debugger` feature, so an agent can look at the editor itself the same way it looks at a game. [How to use it in the Cauldron](https://bevy-coven.github.io/crates/bevy_fairy.html#use-it-in-the-cauldron) is on the crate's page in [the book](https://bevy-coven.github.io/).
 
 ## Bevy compatibility
 
