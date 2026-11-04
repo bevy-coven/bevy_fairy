@@ -231,7 +231,7 @@ fn the_docs_name_the_bevy_version_the_crate_uses() {
 
     for (what, text) in [
         ("README.md", read("README.md")),
-        ("book/SCREENSHOT_SETUP.md", read("book/SCREENSHOT_SETUP.md")),
+        ("docs/guide/install.md", read("docs/guide/install.md")),
         ("src/lib.rs", read("src/lib.rs")),
     ] {
         for line in text.lines() {
@@ -340,8 +340,12 @@ fn no_doc_names_the_old_crate_or_the_old_package_path() {
                 continue;
             }
             // `crates/bevy_fairy` is the old in-repo package path. The crate's own crates.io page,
-            // `crates.io/crates/bevy_fairy`, contains the same characters and is not stale.
-            let checked = trimmed.replace("crates.io/crates/bevy_fairy", "");
+            // `crates.io/crates/bevy_fairy`, and its page in the Bevy Coven book,
+            // `bevy-coven.github.io/crates/bevy_fairy.html`, contain the same characters and are
+            // not stale.
+            let checked = trimmed
+                .replace("crates.io/crates/bevy_fairy", "")
+                .replace("bevy-coven.github.io/crates/bevy_fairy", "");
             for stale in [
                 "bevy_debugger_mcp",
                 "bevy_debugger_bevy",
