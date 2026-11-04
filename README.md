@@ -351,4 +351,5 @@ See [`CHANGELOG.md`](https://github.com/bevy-coven/bevy_fairy/blob/main/CHANGELO
 
 ## License
 
-Licensed under either of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
+Licensed under either of [MIT](https://github.com/bevy-coven/bevy_fairy/blob/main/LICENSE-MIT) or
+[Apache-2.0](https://github.com/bevy-coven/bevy_fairy/blob/main/LICENSE-APACHE), at your option.

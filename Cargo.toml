@@ -1,7 +1,7 @@
 [package]
 name = "bevy_fairy"
 version = "0.12.0"
-edition = "2021"
+edition = "2024"
 authors = ["ladvien <ladvien@example.com>"]
 description = "An agentic debugger for Bevy games: a Bevy plugin that exposes the game's state over BRP, and an MCP server that lets a coding agent read and drive it"
 homepage = "https://github.com/bevy-coven/bevy_fairy"

@@ -219,11 +219,17 @@ fn test_configuration_loading() {
     assert_eq!(config.bevy_brp_port, 15702);
     assert_eq!(config.mcp_port, 3001);
     
-    // Test environment variable loading
-    std::env::set_var("BEVY_BRP_PORT", "12345");
+    // Test environment variable loading.
+    //
+    // # Safety
+    //
+    // Edition 2024 makes mutating the environment `unsafe`: another thread reading it concurrently is
+    // undefined behaviour. No other test in this binary touches `BEVY_BRP_PORT`, and the read that
+    // matters (`Config::from_env`) happens on this thread.
+    unsafe { std::env::set_var("BEVY_BRP_PORT", "12345") };
     let config = Config::from_env().unwrap_or_default();
     assert_eq!(config.bevy_brp_port, 12345);
-    
+
     // Cleanup
-    std::env::remove_var("BEVY_BRP_PORT");
+    unsafe { std::env::remove_var("BEVY_BRP_PORT") };
 }

@@ -35,9 +35,16 @@ fn build_lock() -> MutexGuard<'static, ()> {
 /// `DebuggerPlugin`. `host_signals` makes the game report not ready until the test flips it.
 fn new_app(host_signals: bool, scene: Option<&Path>) -> App {
     let _guard = build_lock();
-    match scene {
-        Some(path) => std::env::set_var(SCENE_VAR, path),
-        None => std::env::remove_var(SCENE_VAR),
+    // # Safety
+    //
+    // Edition 2024 makes mutating the environment `unsafe`, because a concurrent reader is undefined
+    // behaviour. `build_lock` is what makes it sound here: every test that builds an app holds it for
+    // the whole build, so no other thread is reading `SCENE_VAR` while it changes.
+    unsafe {
+        match scene {
+            Some(path) => std::env::set_var(SCENE_VAR, path),
+            None => std::env::remove_var(SCENE_VAR),
+        }
     }
     let plugin = if host_signals {
         DebuggerPlugin::default().host_signals_ready()
