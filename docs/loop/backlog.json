@@ -319,6 +319,22 @@
       "evidence": "Fix: an optional `step` (label) guard on skip, refused when it is not the current step; failing test: post a checkpointed script, make the checkpoint true, run a frame, skip with step = the first label, expect a refusal and at unchanged.",
       "last_failure": "",
       "first_seen": "2026-10-31"
+    },
+    {
+      "id": "B-137",
+      "kind": "bug",
+      "area": "gate",
+      "title": "the gate is red since the edition-2024 bump (ff74c2e) on rustc 1.99: plugin_leaf finds objc2 in the plugin closure (bevy_audio -> cpal), and clippy reports 74 collapsible_if and 14 double_must_use against a baseline of 0",
+      "must_fix": {
+        "misleads": false,
+        "blocks": true,
+        "common_no_workaround": false,
+        "evidence": "scripts/ratchet.sh on 9b96885 (big_mac, 2026-11-06): FAIL collapsible_if 74 > 0, double_must_use 14 > 0, new FAILED the_plugin_closure_contains_nothing_that_can_synthesise_an_event. ff74c2e's own message reports the plugin_leaf failure as pre-existing; the touched files of 5b77df4/9b96885 carry none of the lints."
+      },
+      "status": "open",
+      "evidence": "collapsible_if fires because edition 2024 has let-chains; double_must_use is a newer clippy. The plugin_leaf closure needs objc2's origin checked (cargo tree -i objc2 --no-default-features --features plugin).",
+      "last_failure": "",
+      "first_seen": "2026-11-06"
     }
   ]
 }
