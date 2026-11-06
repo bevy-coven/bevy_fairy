@@ -38,13 +38,36 @@ the window source when the UI is what you need to see.
 The server exposes this as the `screenshot` tool:
 
 ```json
-{"save_to": "shot.png", "source": "offscreen", "region": {"x": 0, "y": 0, "width": 640, "height": 360}, "zoom": 2}
+{"save_to": "shot.png", "source": "offscreen", "rect": [0, 0, 640, 360], "zoom": 2}
 ```
 
-`source` is `offscreen` or `window`; `region` crops in physical pixels and is clamped to the image, a
-region entirely outside it being an error rather than an empty file; `zoom` magnifies after the crop
-and is refused when the result would exceed 4096 x 4096 pixels, so crop first. Pass `inline: true` to
-have the PNG come back in the reply as well as the file.
+`source` is `offscreen` or `window`. `rect` is `[x0, y0, x1, y1]` in the captured picture's own
+(physical) pixels, origin at the top left, `x1` and `y1` exclusive, so `[0, 0, 640, 360]` is the
+640 x 360 top-left corner. A rectangle that is empty, reversed, has a negative origin or reaches past
+the picture's edge is refused with a sentence naming it and the picture's size; it is never clamped,
+because a clamped crop is a picture of a different place than the one asked for. The reply says the
+whole picture's size (`... (640x360) of the 1280x720 picture`), so a caller working in logical
+pixels at a scale factor can check its conversion. `zoom` magnifies after the crop and is refused
+when the result would exceed 4096 x 4096 pixels, so crop first. Pass `inline: true` to have the PNG
+come back in the reply as well as the file.
+
+## Cropping a picture you already have
+
+`bevy_fairy::crop_png` cuts the same rectangle out of PNG bytes, by the same rule: a crop it makes
+and a `rect` capture of the same picture have the same pixels and size, and a rectangle one refuses
+the other refuses with the same sentence. It keeps alpha (the crop is an RGBA8 PNG) and refuses
+bytes that are not a PNG. It needs only the `crop` feature, so a tool that crops pictures takes
+neither the plugin nor the server:
+
+```toml
+bevy_fairy = { version = "0.13", default-features = false, features = ["crop"] }
+```
+
+```rust,ignore
+// `png` is the bytes of a 64 x 48 PNG.
+let crop = bevy_fairy::crop_png(&png, [8, 4, 40, 36])?;
+assert_eq!((crop.size, crop.picture), ([32, 32], [64, 48]));
+```
 
 The plugin registers `bevy_fairy/screenshot` and `bevy_fairy/capture` itself, so a game never
 registers them by hand: registering them again would add a second `RemotePlugin`, and the game would

@@ -2,12 +2,26 @@
 
 ## Unreleased
 
-Documentation only: no crate behaviour changes, so this needs no new version until the next code
-change ships. The README, `docs/` and the media were brought to the org's
-[documentation guide](https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md).
+Breaking: `bevy_fairy/screenshot`'s `region` and the `screenshot` tool's `region` are gone, replaced by
+`rect`, which refuses a rectangle the old one would have clamped (issue #15). The README, `docs/` and
+the media were also brought to the org's
+[documentation guide](https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md), and the
+crate moved to edition 2024.
+
+### Added
+
+- **`bevy_fairy::crop_png(png, [x0, y0, x1, y1])`** cuts a rectangle out of PNG bytes and returns a `Crop`: the crop as an RGBA8 PNG (alpha kept as it is), its `size` and the whole `picture`'s size. The rectangle is in the picture's own pixels, `x1`/`y1` exclusive. One that is empty, reversed, has a negative origin or reaches outside the picture is refused with a sentence naming it and the picture's size, never clamped; bytes that are not a PNG are refused. `crop_view` is the bounds rule itself, for an image already decoded. Behind the new **`crop`** feature, which needs only `image`: a tool that crops pictures takes neither the plugin nor the server. `server` and `plugin-screenshot` turn it on.
+- **`bevy_fairy/capture` reports `picture: [width, height]`**, the whole captured frame's size before `rect` and `zoom`, and the `screenshot` tool's reply says `(WxH) of the PxQ picture`, so a caller working in logical pixels can check its conversion.
+
+### Breaking
+
+- **`rect` replaces `region`** on `bevy_fairy/screenshot` and on the `screenshot` tool. Migration: `{"region": {"x": X, "y": Y, "width": W, "height": H}}` becomes `{"rect": [X, Y, X + W, Y + H]}`. `region` clamped a rectangle that ran off the picture's edge, so a caller got a picture of a different place than it asked for and nothing said so; `rect` cuts through the same rule as `crop_png` and refuses it. A rectangle the capture refuses is a failed capture whose `error` is `crop_png`'s sentence.
+- **`bevy_fairy/screenshot` refuses an unknown field.** It used to ignore one, so a caller still sending `region` would have been answered the whole frame as if it were the crop. `CaptureState::Done` carries `picture`.
+- **The `screenshot` tool refuses a `rect` capture whose reply has no `picture`**: that is a game plugin older than `rect`, which ignored it and captured the whole frame. Update the game's `bevy_fairy` with the server.
 
 ### Changed
 
+- **Edition 2024.** Nothing changes for a dependent; the three test call sites that set the process environment now carry an `unsafe` block with a `# Safety` note.
 - **The README is 104 lines and follows one order**: title, the Vibe Coded banner, the pitch, one badge row, a six-second hero GIF and its caption, a still PNG, the Status line, the Why line, a Quick Start whose Rust block `cargo test --doc` now compiles, Try it, seven "What you can do" bullets, Part of the Coven, the Bevy compatibility table, Learn more, and Who and licence. Everything the README used to carry beyond that moved into `docs/guide/` rather than being deleted: the install page, the client setup and its failure table, the command registration example, capture, input, the guide overlay, the BRP method table, the feature table, the environment variables and the examples.
 - **`src/lib.rs` doctests the README** (`struct ReadmeDoctests`), so a Quick Start that stops compiling fails the build. A block that needs a window or a running game is `no_run`, which still compiles it.
 - **CI runs `cargo test --doc --no-default-features --features plugin` and `cargo build --examples`**, which it did not before: `cargo nextest` does not run doctests, and an example that stops compiling was invisible until someone ran it.

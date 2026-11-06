@@ -10,7 +10,8 @@
 //! reported; they have no UI rectangle.
 //!
 //! Space: `rect` is `[x, y, width, height]` in physical pixels of the node's render target, which is
-//! the pixel space of `bevy_fairy/screenshot`'s `region`. A node's rect can be passed there as is.
+//! the pixel space of `bevy_fairy/screenshot`'s `rect`. That one is written `[x0, y0, x1, y1]`, so a
+//! node's rect is passed there as `[x, y, x + width, y + height]`.
 
 use bevy::prelude::*;
 use bevy::text::TextElement;
@@ -33,7 +34,8 @@ const MAX_ANCESTORS: usize = 3;
 
 const DEFAULT_LIMIT: usize = 200;
 
-/// A rectangle in physical target pixels, the same shape as `bevy_fairy/screenshot`'s `region`.
+/// A rectangle in physical target pixels, `{x, y, width, height}`: the pixel space of
+/// `bevy_fairy/screenshot`'s `rect`.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UiRegion {
@@ -66,7 +68,7 @@ pub(crate) fn register(app: &mut App) {
             "List the bevy_ui text the player can read: text, on-screen rect, visibility and the names of its nearest ancestors. Hidden nodes are omitted unless include_hidden is true.",
         )
         .params(
-            "contains: string, optional, case-sensitive substring; region: {x,y,width,height}, optional, physical target pixels (the space of screenshot's region); include_hidden: bool, default false; limit: integer >= 1, default 200",
+            "contains: string, optional, case-sensitive substring; region: {x,y,width,height}, optional, physical target pixels (the space of screenshot's rect); include_hidden: bool, default false; limit: integer >= 1, default 200",
         )
         .example(json!({"contains": "Score", "include_hidden": false}))
         .read_only(),
@@ -228,7 +230,8 @@ fn handle_ui_text(
         }
 
         // A visible node's rect is what the player sees, so it is cut to the target; that is also
-        // what makes it a valid screenshot `region`. A hidden node keeps its raw box.
+        // what makes it, as `[x, y, x + width, y + height]`, a valid screenshot `rect`. A hidden
+        // node keeps its raw box.
         let shown = if hidden.is_none() { bounds.intersect(target_rect) } else { bounds };
         if region.is_some_and(|region| !overlaps(shown, region)) {
             continue;

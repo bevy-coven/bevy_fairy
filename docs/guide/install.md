@@ -97,9 +97,10 @@ The same shape takes an environment variable: add the two plugins only when
 |---|---|---|
 | `server` (default) | Building the `bevy-fairy` binary | The MCP server and its dependencies |
 | `plugin` | Your game | The plugin; four direct dependencies |
-| `plugin-screenshot` | Your game, with capture | `plugin` + Bevy's renderer |
+| `plugin-screenshot` | Your game, with capture | `plugin` + Bevy's renderer + `crop` |
 | `plugin-guide` | Your game, with the guide overlay | `plugin` + Bevy UI, picking and a font |
 | `plugin-ui-text` | Your game, if an agent should read its HUD text | `plugin` + Bevy UI |
+| `crop` | A tool that crops PNGs (`bevy_fairy::crop_png`) | `image` only; neither the plugin nor the server |
 
 Each `plugin-*` feature turns on the BRP methods listed in
 [tools.md](tools.md#brp-methods-the-plugin-registers).

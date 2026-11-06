@@ -256,16 +256,6 @@ pub struct BrpCallRequest {
     pub params: Option<Value>,
 }
 
-/// A rectangle of the captured image, in its pixels.
-#[derive(Debug, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct CaptureRegion {
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32,
-}
-
 /// `screenshot`: capture the game to a PNG on this machine.
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -278,10 +268,13 @@ pub struct ScreenshotRequest {
     /// the game window, UI included.
     #[serde(default)]
     pub source: Option<String>,
-    /// Crop to this rectangle before saving.
+    /// Cut out this rectangle before saving: `[x0, y0, x1, y1]` in the captured picture's own
+    /// (physical) pixels, origin top left, `x1` and `y1` exclusive. A rectangle that is empty,
+    /// reversed, has a negative origin or reaches outside the picture is refused with the picture's
+    /// size, never clamped. The reply gives the whole picture's size.
     #[serde(default)]
-    pub region: Option<CaptureRegion>,
-    /// Magnify the captured image, after the crop, by this factor. Default 1. The result is at most 4096 x 4096 pixels; a zoom that would make it larger is refused, so crop with `region` first.
+    pub rect: Option<[i64; 4]>,
+    /// Magnify the captured image, after the crop, by this factor. Default 1. The result is at most 4096 x 4096 pixels; a zoom that would make it larger is refused, so crop with `rect` first.
     #[serde(default)]
     pub zoom: Option<f32>,
     /// Also return the PNG inline, so the agent sees the image as well as the saved file.
@@ -543,6 +536,9 @@ struct Captured {
     source: Option<String>,
     frame_requested: Option<u64>,
     frame_captured: Option<u64>,
+    /// The whole captured frame's size, before `rect` and `zoom`. `None` from a plugin older than
+    /// `rect`, which does not report it.
+    picture: Option<[u64; 2]>,
 }
 
 impl Captured {
@@ -590,6 +586,12 @@ impl BevyDebuggerTools {
         let png = base64::engine::general_purpose::STANDARD
             .decode(&png_base64)
             .map_err(|e| format!("the capture was not valid base64: {e}"))?;
+        let picture = match state.get("picture") {
+            None => None,
+            Some(p) => Some(serde_json::from_value::<[u64; 2]>(p.clone()).map_err(|e| {
+                format!("{CAPTURE_METHOD} returned a picture that is not [width, height]: {p} ({e})")
+            })?),
+        };
         Ok(Captured {
             width,
             height,
@@ -598,6 +600,7 @@ impl BevyDebuggerTools {
             source: state.get("source").and_then(Value::as_str).map(str::to_owned),
             frame_requested: state.get("frame_requested").and_then(Value::as_u64),
             frame_captured: state.get("frame_captured").and_then(Value::as_u64),
+            picture,
         })
     }
 }
@@ -964,11 +967,8 @@ impl BevyDebuggerTools {
         if let Some(source) = req.source {
             params.insert("source".to_string(), Value::from(source));
         }
-        if let Some(region) = req.region {
-            params.insert(
-                "region".to_string(),
-                serde_json::json!({"x": region.x, "y": region.y, "width": region.width, "height": region.height}),
-            );
+        if let Some(rect) = req.rect {
+            params.insert("rect".to_string(), serde_json::json!(rect));
         }
         if let Some(zoom) = req.zoom {
             params.insert("zoom".to_string(), Value::from(zoom));
@@ -977,6 +977,16 @@ impl BevyDebuggerTools {
             Ok(captured) => captured,
             Err(text) => return tool_err(text),
         };
+        // A plugin older than `rect` ignores the field it does not know and answers the whole frame;
+        // it is also the plugin that reports no `picture`. Saving that as the crop would be a picture
+        // of a different place than the one asked for.
+        if let (Some(rect), None) = (req.rect, captured.picture) {
+            return tool_err(format!(
+                "the game's bevy_fairy plugin did not report `picture`, so it predates `rect` and ignored \
+                 {rect:?}: the capture is the whole frame, not the crop, and nothing was saved. Update the \
+                 game's bevy_fairy dependency, or call without `rect`"
+            ));
+        }
         let (width, height, png_base64, png) = (captured.width, captured.height, captured.png_base64.clone(), &captured.png);
         let path = req.save_to.map(PathBuf::from).unwrap_or_else(default_capture_path);
         if let Err(e) = write_file_creating_dirs(&path, png) {
@@ -984,7 +994,9 @@ impl BevyDebuggerTools {
         }
         let absolute = std::path::absolute(&path).unwrap_or_else(|_| path.clone());
         let provenance = captured.provenance();
-        let mut content = vec![Content::text(format!("saved {} ({width}x{height}); {provenance}", absolute.display()))];
+        let picture = captured.picture.map_or_else(String::new, |[w, h]| format!(" of the {w}x{h} picture"));
+        let mut content =
+            vec![Content::text(format!("saved {} ({width}x{height}){picture}; {provenance}", absolute.display()))];
         if req.inline.unwrap_or(false) {
             content.push(Content::image(png_base64.to_string(), "image/png"));
         }

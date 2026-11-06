@@ -1,5 +1,5 @@
-//! Screenshot capture, from an **offscreen render target** or from the **window**, with region
-//! cropping and zoom. The PNG comes back over BRP, so the agent needs no shared filesystem.
+//! Screenshot capture, from an **offscreen render target** or from the **window**, with a `rect`
+//! crop and zoom. The PNG comes back over BRP, so the agent needs no shared filesystem.
 //!
 //! # Two sources
 //!
@@ -42,6 +42,7 @@ use image::{imageops::FilterType, ImageFormat};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
+use crate::crop::{crop_view, CropRect};
 use crate::plugin::ready::FrameTicks;
 
 /// How many finished or pending captures [`Captures`] keeps. The oldest is dropped.
@@ -57,17 +58,22 @@ pub struct DebugCaptureTarget {
     pub image: Handle<Image>,
 }
 
-/// Parameters for the `bevy_fairy/screenshot` BRP method.
+/// Parameters for the `bevy_fairy/screenshot` BRP method. An unknown field is refused: `region`,
+/// the clamping crop this replaced, used to be accepted, and a dropped crop is a whole picture
+/// answered as if it were the part asked for.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ScreenshotParams {
     /// Path to also write the PNG to, on the game's machine. Optional: the PNG is always returned
     /// through `bevy_fairy/capture`, and a file is written only when this is given.
     pub path: Option<String>,
-    /// Region to crop, in physical pixels: `{ x, y, width, height }`. Clamped to the captured image;
-    /// a region entirely outside it is an error rather than an empty file.
-    pub region: Option<Region>,
+    /// The rectangle to cut out, `[x0, y0, x1, y1]` in the captured picture's own (physical)
+    /// pixels, `x1`/`y1` exclusive. The same rule as [`crate::crop_png`]: a rectangle that is empty,
+    /// reversed, negative or reaches outside the picture fails the capture with the same sentence,
+    /// and is never clamped.
+    pub rect: Option<CropRect>,
     /// Scale factor applied after cropping. `1.0` leaves the image alone. The scaled image is at
-    /// most [`MAX_ZOOMED_PIXELS`] pixels; a `zoom` that would make it larger is refused.
+    /// most 4096 x 4096 pixels; a `zoom` that would make it larger is refused.
     #[serde(default = "one")]
     pub zoom: f32,
     /// `"offscreen"` or `"window"`. Defaults to offscreen when a [`DebugCaptureTarget`] exists,
@@ -79,19 +85,13 @@ fn one() -> f32 {
     1.0
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Region {
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32,
-}
-
 /// Where a capture stands.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CaptureState {
     Pending,
-    Done { png: Vec<u8>, width: u32, height: u32, provenance: Provenance },
+    /// A finished capture. `width` x `height` is the PNG's size, after `rect` and `zoom`;
+    /// `picture` is the size of the whole frame that was captured, before either.
+    Done { png: Vec<u8>, width: u32, height: u32, picture: [u32; 2], provenance: Provenance },
     Failed(String),
 }
 
@@ -163,7 +163,7 @@ pub fn handle_screenshot(
     let params: ScreenshotParams = match params {
         Some(p) => serde_json::from_value(p)
             .map_err(|e| invalid_params(format!("invalid screenshot params: {e}")))?,
-        None => ScreenshotParams { path: None, region: None, zoom: 1.0, source: None },
+        None => ScreenshotParams { path: None, rect: None, zoom: 1.0, source: None },
     };
 
     let source = match params.source.as_deref() {
@@ -179,15 +179,6 @@ pub fn handle_screenshot(
             "zoom must be finite and greater than zero, got {}",
             params.zoom
         )));
-    }
-    // Written as a nested `if` rather than a let-chain: this crate is edition 2021, where let-chains
-    // are not available regardless of compiler version.
-    if let Some(r) = &params.region {
-        if r.width == 0 || r.height == 0 {
-            return Err(invalid_params(
-                "region width and height must both be non-zero".to_string(),
-            ));
-        }
     }
 
     let screenshot = match source {
@@ -224,21 +215,21 @@ pub fn handle_screenshot(
     let frame_requested = ticks.0;
     let path = params.path;
     let reported = path.clone();
-    let region = params.region;
+    let rect = params.rect;
     let zoom = params.zoom;
 
     commands.spawn(screenshot).observe(move |trigger: On<ScreenshotCaptured>, mut captures: ResMut<Captures>, ticks: Res<FrameTicks>| {
         let provenance = Provenance { source: source_name, frame_requested, frame_captured: ticks.0 };
-        let state = match encode_capture(&trigger.image, region.as_ref(), zoom) {
-            Ok((png, width, height)) => match path.as_deref() {
+        let state = match encode_capture(&trigger.image, rect, zoom) {
+            Ok(Encoded { png, width, height, picture }) => match path.as_deref() {
                 Some(p) => match std::fs::write(p, &png) {
                     Ok(()) => {
                         info!("bevy_fairy/screenshot: wrote {p}");
-                        CaptureState::Done { png, width, height, provenance }
+                        CaptureState::Done { png, width, height, picture, provenance }
                     }
                     Err(e) => CaptureState::Failed(format!("could not write {p}: {e}")),
                 },
-                None => CaptureState::Done { png, width, height, provenance },
+                None => CaptureState::Done { png, width, height, picture, provenance },
             },
             Err(e) => CaptureState::Failed(e),
         };
@@ -272,10 +263,11 @@ pub(crate) fn handle_capture(In(params): In<Option<Value>>, captures: Res<Captur
             params.id
         ))),
         Some(CaptureState::Pending) => Ok(json!({ "status": "pending" })),
-        Some(CaptureState::Done { png, width, height, provenance }) => Ok(json!({
+        Some(CaptureState::Done { png, width, height, picture, provenance }) => Ok(json!({
             "status": "done",
             "width": width,
             "height": height,
+            "picture": picture,
             "source": provenance.source,
             "frame_requested": provenance.frame_requested,
             "frame_captured": provenance.frame_captured,
@@ -288,13 +280,18 @@ pub(crate) fn handle_capture(In(params): In<Option<Value>>, captures: Res<Captur
 /// The most pixels `zoom` may make of a capture: 4096 x 4096, twice a 4K frame.
 const MAX_ZOOMED_PIXELS: f64 = 16_777_216.0;
 
-/// Convert, crop, scale and encode to PNG. Returns the PNG bytes and the final size. Split out so
-/// every failure has one place to be reported from, and so the observer closure stays readable.
-fn encode_capture(
-    image: &Image,
-    region: Option<&Region>,
-    zoom: f32,
-) -> Result<(Vec<u8>, u32, u32), String> {
+/// A capture encoded for the caller: the PNG, its size, and the whole captured frame's size.
+#[derive(Debug)]
+struct Encoded {
+    png: Vec<u8>,
+    width: u32,
+    height: u32,
+    picture: [u32; 2],
+}
+
+/// Convert, crop, scale and encode to PNG. Split out so every failure has one place to be reported
+/// from, and so the observer closure stays readable.
+fn encode_capture(image: &Image, rect: Option<CropRect>, zoom: f32) -> Result<Encoded, String> {
     let dynamic = image
         .clone()
         .try_into_dynamic()
@@ -303,20 +300,10 @@ fn encode_capture(
     // Drop the alpha channel. With HDR enabled it carries brightness rather than opacity, so keeping
     // it makes the PNG look wrong; `bevy_render`'s own `save_to_disk` does exactly this.
     let mut rgb = dynamic.to_rgb8();
+    let picture = [rgb.width(), rgb.height()];
 
-    if let Some(r) = region {
-        let (w, h) = (rgb.width(), rgb.height());
-        if r.x >= w || r.y >= h {
-            return Err(format!(
-                "region origin ({}, {}) is outside the {w}x{h} capture",
-                r.x, r.y
-            ));
-        }
-        // Clamp rather than refuse: a region running off the edge is a reasonable request, an origin
-        // off the edge is a mistake.
-        let width = r.width.min(w - r.x);
-        let height = r.height.min(h - r.y);
-        rgb = image::imageops::crop_imm(&rgb, r.x, r.y, width, height).to_image();
+    if let Some(rect) = rect {
+        rgb = crop_view(&rgb, rect)?.to_image();
     }
 
     if zoom != 1.0 {
@@ -330,7 +317,7 @@ fn encode_capture(
     let mut buf = Cursor::new(Vec::new());
     rgb.write_to(&mut buf, ImageFormat::Png)
         .map_err(|e| format!("could not encode the PNG: {e}"))?;
-    Ok((buf.into_inner(), width, height))
+    Ok(Encoded { png: buf.into_inner(), width, height, picture })
 }
 
 /// The size `zoom` makes of a `width` x `height` image, or why it is refused. Refused, not
@@ -344,7 +331,7 @@ fn zoomed_size(width: u32, height: u32, zoom: f32) -> Result<(u32, u32), String>
         return Err(format!(
             "zoom {zoom} would make the {width}x{height} capture a {scaled_width:.0}x{scaled_height:.0} image; \
              `zoom` makes at most {MAX_ZOOMED_PIXELS:.0} pixels (4096 x 4096). Pass a smaller `zoom`, or a \
-             `region` to zoom into"
+             `rect` to zoom into"
         ));
     }
     Ok((scaled_width as u32, scaled_height as u32))
@@ -399,7 +386,10 @@ mod tests {
         let mut captures = Captures::default();
         let id = captures.begin();
         let provenance = Provenance { source: "window", frame_requested: 40, frame_captured: 43 };
-        captures.finish(id, CaptureState::Done { png: vec![1, 2, 3], width: 4, height: 5, provenance });
+        captures.finish(
+            id,
+            CaptureState::Done { png: vec![1, 2, 3], width: 4, height: 5, picture: [64, 48], provenance },
+        );
         world.insert_resource(captures);
         let reply = world
             .run_system_once_with(handle_capture, Some(json!({ "id": id })))
@@ -409,6 +399,7 @@ mod tests {
         assert_eq!(reply["source"], "window");
         assert_eq!(reply["frame_requested"], 40);
         assert_eq!(reply["frame_captured"], 43);
+        assert_eq!(reply["picture"], json!([64, 48]), "the whole frame's size, beside the crop's");
     }
 
     #[test]
@@ -426,6 +417,65 @@ mod tests {
         Image::new_target_texture(width, height, bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb, None)
     }
 
+    /// A 64 x 48 frame whose every pixel differs, as the renderer hands it to the observer.
+    fn patterned() -> Image {
+        use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+        let (width, height) = (64u32, 48u32);
+        let data = (0..height)
+            .flat_map(|y| (0..width).flat_map(move |x| [x as u8 * 4, y as u8 * 5, (x ^ y) as u8, 255]))
+            .collect();
+        Image::new(
+            Extent3d { width, height, depth_or_array_layers: 1 },
+            TextureDimension::D2,
+            data,
+            TextureFormat::Rgba8UnormSrgb,
+            bevy::asset::RenderAssetUsages::default(),
+        )
+    }
+
+    fn rgba(png: &[u8]) -> image::RgbaImage {
+        image::load_from_memory_with_format(png, ImageFormat::Png).expect("a PNG").to_rgba8()
+    }
+
+    /// Issue #15, acceptance 6: `rect` on the screenshot is `crop_png` over the picture the same
+    /// capture gives without it: the same pixels, the same `size` and `picture`, and a bad `rect`
+    /// is the same sentence.
+    #[test]
+    fn a_screenshot_rect_is_the_crop_crop_png_makes_of_the_same_picture() {
+        let frame = patterned();
+        let whole = encode_capture(&frame, None, 1.0).expect("the whole frame encodes");
+        assert_eq!((whole.width, whole.height, whole.picture), (64, 48, [64, 48]));
+        for rect in [[8, 4, 40, 36], [0, 0, 64, 48], [63, 47, 64, 48]] {
+            let shot = encode_capture(&frame, Some(rect), 1.0).expect("an inside rect crops");
+            let crop = crate::crop_png(&whole.png, rect).expect("crop_png crops the same rect");
+            assert_eq!([shot.width, shot.height], crop.size, "{rect:?}");
+            assert_eq!(shot.picture, crop.picture, "{rect:?}");
+            assert_eq!(rgba(&shot.png), rgba(&crop.png), "{rect:?}: the same pixels");
+        }
+        for rect in [[0, 0, 0, 10], [10, 0, 5, 10], [-1, 0, 10, 10], [0, 0, 65, 10], [60, 40, 70, 50]] {
+            let refusal = encode_capture(&frame, Some(rect), 1.0).expect_err("refused, never clamped");
+            let same = crate::crop_png(&whole.png, rect).expect_err("crop_png refuses it too");
+            assert_eq!(refusal, same, "{rect:?}");
+        }
+    }
+
+    /// `region` was the clamping crop `rect` replaced. The params used to ignore an unknown field,
+    /// so a caller still sending `region` would have been answered the whole picture.
+    #[test]
+    fn a_screenshot_with_the_old_region_is_refused_not_answered_uncropped() {
+        let mut world = World::new();
+        world.insert_resource(Captures::default());
+        world.insert_resource(FrameTicks::default());
+        let refusal = world
+            .run_system_once_with(
+                handle_screenshot,
+                Some(json!({"region": {"x": 0, "y": 0, "width": 8, "height": 8}, "source": "window"})),
+            )
+            .expect("system runs")
+            .expect_err("an unknown field is refused");
+        assert!(refusal.message.contains("region") && refusal.message.contains("rect"), "{}", refusal.message);
+    }
+
     /// `zoom` had no upper bound: `{"zoom": 1e9}` asked `image::imageops::resize` for a 4e9 x 4e9
     /// image inside the game's observer, which panics or aborts the whole game on the allocation.
     /// A request this server cannot honour is a failed capture that says why, never an attempt.
@@ -436,18 +486,17 @@ mod tests {
         encode_capture(&black(4, 4), None, f32::MAX).expect_err("f32::MAX is refused");
         let refusal = encode_capture(&black(4, 4), None, 2500.0).expect_err("a 10000 x 10000 image is refused");
         assert!(refusal.contains("zoom") && refusal.contains("10000x10000"), "{refusal}");
-        assert!(refusal.contains("region"), "it says how to get the detail another way: {refusal}");
+        assert!(refusal.contains("rect"), "it says how to get the detail another way: {refusal}");
     }
 
     #[test]
-    fn a_zoom_that_fits_still_scales_the_cropped_region() {
-        let (_, width, height) = encode_capture(&black(4, 4), None, 8.0).expect("8x of 4x4");
-        assert_eq!((width, height), (32, 32));
-        let (_, width, height) = encode_capture(&black(4, 4), None, 0.5).expect("0.5x of 4x4");
-        assert_eq!((width, height), (2, 2));
-        let region = Region { x: 0, y: 0, width: 2, height: 1 };
-        let (_, width, height) = encode_capture(&black(4, 4), Some(&region), 16.0).expect("16x of a 2x1 crop");
-        assert_eq!((width, height), (32, 16));
+    fn a_zoom_that_fits_still_scales_the_cropped_rect() {
+        let encoded = encode_capture(&black(4, 4), None, 8.0).expect("8x of 4x4");
+        assert_eq!((encoded.width, encoded.height), (32, 32));
+        let encoded = encode_capture(&black(4, 4), None, 0.5).expect("0.5x of 4x4");
+        assert_eq!((encoded.width, encoded.height), (2, 2));
+        let encoded = encode_capture(&black(4, 4), Some([0, 0, 2, 1]), 16.0).expect("16x of a 2x1 crop");
+        assert_eq!((encoded.width, encoded.height, encoded.picture), (32, 16, [4, 4]));
     }
 
     /// A zoom out allocates less than the capture the game already holds, so it is never refused,
@@ -460,7 +509,7 @@ mod tests {
         assert_eq!(zoomed_size(1000, 1000, 4.0), Ok((4000, 4000)));
         for (width, height, zoom) in [(1000, 1000, 4.5), (7680, 4320, 1.5), (4, 4, 1e9), (1, 1, f32::MAX)] {
             let refusal = zoomed_size(width, height, zoom).expect_err("larger than 4096 x 4096");
-            assert!(refusal.contains("region"), "{refusal}");
+            assert!(refusal.contains("rect"), "{refusal}");
         }
     }
 }

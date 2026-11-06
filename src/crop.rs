@@ -1,6 +1,7 @@
-//! Cut a rectangle out of a picture: [`crop_png`] for PNG bytes, and the one bounds rule
-//! ([`crop_view`]) that `bevy_fairy/screenshot`'s `rect` uses too, so a crop made here and a crop
-//! made by the game are the same crop and are refused for the same reasons.
+//! Cut a rectangle out of a picture: [`crop_png`] for PNG bytes, and the one
+//! bounds rule ([`crop_view`](crate::crop::crop_view)) that `bevy_fairy/screenshot`'s `rect` uses
+//! too, so a crop made here and a crop made by the game are the same crop and are refused for the
+//! same reasons.
 //!
 //! A rectangle that reaches outside the picture is **refused, never clamped**. A clamped crop is a
 //! picture of a different place than the caller asked for, and nothing in the answer would say so.

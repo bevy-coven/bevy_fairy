@@ -143,10 +143,10 @@ Capture the game to a PNG file on this machine and return its path, size, the so
 | Argument | Type | Required | Description |
 |---|---|---|---|
 | `inline` | boolean | no | Also return the PNG inline, so the agent sees the image as well as the saved file. |
-| `region` | any | no | Crop to this rectangle before saving. |
+| `rect` | array | no | Cut out this rectangle before saving: `[x0, y0, x1, y1]` in the captured picture's own (physical) pixels, origin top left, `x1` and `y1` exclusive. A rectangle that is empty, reversed, has a negative origin or reaches outside the picture is refused with the picture's size, never clamped. The reply gives the whole picture's size. |
 | `save_to` | string | no | File to write on this machine. Default: `$BEVY_FAIRY_CAPTURE_DIR/capture-<unix_ms>.png`, or `./debug_captures/` when that variable is unset. |
 | `source` | string | no | `offscreen` (the default) renders the game's own image and leaves out UI. `window` captures the game window, UI included. |
-| `zoom` | number | no | Magnify the captured image, after the crop, by this factor. Default 1. The result is at most 4096 x 4096 pixels; a zoom that would make it larger is refused, so crop with `region` first. |
+| `zoom` | number | no | Magnify the captured image, after the crop, by this factor. Default 1. The result is at most 4096 x 4096 pixels; a zoom that would make it larger is refused, so crop with `rect` first. |
 
 ## `status`
 

@@ -206,7 +206,7 @@ async fn screenshot_writes_a_png_after_one_pending_reply() {
         .screenshot(Parameters(ScreenshotRequest {
             save_to: Some(save_to.to_string_lossy().into_owned()),
             source: None,
-            region: None,
+            rect: None,
             zoom: None,
             inline: None,
         }))
@@ -226,6 +226,34 @@ async fn screenshot_writes_a_png_after_one_pending_reply() {
     let expected = base64::engine::general_purpose::STANDARD.decode(PNG_1X1_BASE64).expect("fixture decodes");
     assert_eq!(written, expected);
     assert_eq!(&written[..8], &PNG_SIGNATURE);
+}
+
+/// The fake game answers like a plugin older than `rect`: it reports no `picture`, and such a
+/// plugin ignores a field it does not know, so its capture is the whole frame. Saving that as the
+/// crop would be a picture of a different place than the one asked for.
+#[tokio::test]
+async fn screenshot_with_rect_refuses_a_plugin_that_cannot_have_cropped() {
+    let game = game_with(true, 0);
+    let port = start_fake_game(game.clone()).await;
+    let tools = tools_for(port);
+    let dir = tempfile::tempdir().expect("temp dir");
+    let save_to = dir.path().join("crop.png");
+
+    let result = tools
+        .screenshot(Parameters(ScreenshotRequest {
+            save_to: Some(save_to.to_string_lossy().into_owned()),
+            source: None,
+            rect: Some([0, 0, 1, 1]),
+            zoom: None,
+            inline: None,
+        }))
+        .await
+        .expect("screenshot returns a result");
+
+    assert_eq!(result.is_error, Some(true), "{}", text_of(&result));
+    let text = text_of(&result);
+    assert!(text.contains("predates `rect`") && text.contains("[0, 0, 1, 1]"), "{text}");
+    assert!(!save_to.exists(), "nothing is saved when the crop cannot be trusted");
 }
 
 #[tokio::test]
@@ -344,7 +372,7 @@ async fn every_tool_says_no_game_answers_when_nothing_listens() {
                 .screenshot(Parameters(ScreenshotRequest {
                     save_to: Some(shot_path.to_string_lossy().into_owned()),
                     source: None,
-                    region: None,
+                    rect: None,
                     zoom: None,
                     inline: None,
                 }))

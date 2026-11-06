@@ -38,6 +38,20 @@ is worse than none, because it reads as fresh.
 Every capture is paired with a compact state snapshot taken on the same frame, and both carry frame
 numbers and timestamps, so the agent can tell which picture goes with which state.
 
+## A crop is refused, never clamped
+
+`crop_png` and `screenshot`'s `rect` refuse a rectangle that reaches past the picture's edge instead
+of cutting it to fit. A clamped crop answers a different question than the one asked, and the reply
+carries nothing that says so: it is the "silent default" this crate's first rule forbids, and it is
+what the old `region` did (issue #15). Refusing costs the caller one retry with the picture's size,
+which the refusal names.
+
+The rectangle is half-open, `[x0, y0, x1, y1]` with `x1` and `y1` exclusive: its size is `x1 - x0`
+with no `+ 1`, two rectangles that share an edge do not overlap, and the empty rectangle is
+`x0 == x1` rather than a negative width. That is Dijkstra's argument for half-open ranges (EWD831,
+"Why numbering should start at zero", 1982), and it is how Bevy's `URect` measures itself
+(`width = max.x - min.x`).
+
 ## Documentation is checked, not trusted
 
 `tests/docs_drift.rs` reads the README, `docs/`, `book/` and the shipped scripts and fails when a doc
