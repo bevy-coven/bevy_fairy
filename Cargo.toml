@@ -164,7 +164,7 @@ server = [
     "dep:tower",
     "dep:tower-http",
     "dep:axum",
-    "dep:image",
+    "crop",
 ]
 
 # The Bevy plugin, the half a game links. `bevy` is `default-features = false` and picks up
@@ -180,7 +180,11 @@ plugin = [
 # `bevy_fairy/screenshot` and `bevy_fairy/capture`: offscreen or window capture, returned over
 # BRP. This is what turns on Bevy's renderer inside the plugin, so a headless host can leave
 # it off.
-plugin-screenshot = ["plugin", "bevy/bevy_render", "bevy/png", "dep:image", "bevy/bevy_picking"]
+plugin-screenshot = ["plugin", "bevy/bevy_render", "bevy/png", "crop", "bevy/bevy_picking"]
+
+# `bevy_fairy::crop_png`: cut a rectangle out of a PNG, by the same rule `bevy_fairy/screenshot`'s
+# `rect` uses. Needs only `image`, so a tool that crops pictures takes this and neither half.
+crop = ["dep:image"]
 
 # `bevy_fairy/ui_text`: the bevy_ui text the player can read, with rects. Needs `bevy_ui` and
 # nothing else; a headless host with no UI leaves it off.
@@ -252,6 +256,10 @@ futures-util = "0.3"
 
 # The plugin's own tests need the plugin. `required-features` keeps them from being built when
 # the plugin is off, rather than failing to compile.
+[[test]]
+name = "crop"
+required-features = ["crop"]
+
 [[test]]
 name = "plugin_clock"
 required-features = ["plugin"]

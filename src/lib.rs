@@ -87,6 +87,14 @@ pub mod plugin;
 #[cfg(feature = "server")]
 pub mod server;
 
+/// Cutting a rectangle out of a picture: [`crop_png`], and the bounds rule `bevy_fairy/screenshot`'s
+/// `rect` shares. Behind the `crop` feature, which `server` and `plugin-screenshot` turn on.
+#[cfg(feature = "crop")]
+pub mod crop;
+
+#[cfg(feature = "crop")]
+pub use crop::{crop_png, Crop, CropRect};
+
 // The plugin's own items are re-exported at the root, so a game writes
 // `use bevy_fairy::DebuggerPlugin` rather than `use bevy_fairy::plugin::DebuggerPlugin`. The
 // module is still there for anyone who wants to be explicit.
