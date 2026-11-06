@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.13.0 - 2026-11-06
+
+Covers everything since 0.12.0 (semver-checks: 4 major checks: `ScreenshotParams.region`,
+`ScreenshotRequest.region` and `CaptureRegion` removed, `CaptureState::Done` gained `picture`).
 Breaking: `bevy_fairy/screenshot`'s `region` and the `screenshot` tool's `region` are gone, replaced by
 `rect`, which refuses a rectangle the old one would have clamped (issue #15). The README, `docs/` and
 the media were also brought to the org's

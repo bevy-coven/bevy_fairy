@@ -84,7 +84,7 @@ It cannot see frame time, CPU or memory: BRP does not report them, and the tools
 
 | bevy_fairy | Bevy |
 |---|---|
-| `0.2.0` and later (now `0.12.0`) | 0.20 |
+| `0.2.0` and later (now `0.13.0`) | 0.20 |
 | `0.1.10` | 0.19, then 0.16 before that |
 
 ## Learn more

@@ -7,7 +7,7 @@ nothing contaminates the protocol stream.
 ```sh
 cargo install bevy_fairy --no-default-features --features server
 bevy-fairy --version
-# bevy-fairy 0.12.0
+# bevy-fairy 0.13.0
 ```
 
 `--stdio` is the mode; it is also what the binary does when its stdin is not a terminal, so a client
