@@ -55,7 +55,7 @@ The card has no camera of its own — a second `Camera2d` in somebody else's app
 happen — so it spawns into whatever UI tree the host already renders, and an app with no UI camera
 shows nothing. Its position and width are the host's: `DebuggerPlugin` `init_resource`s
 `GuidePlacement`, so a host that `insert_resource`s its own value wins whichever order the two
-plugins are added in. Grimoire sets it to sit below the title line, so the card does not cover the
+plugins are added in. Dark Factory sets it to sit below the title line, so the card does not cover the
 panels it is talking about.
 
 The card is `Pickable::IGNORE`, so it never eats a click meant for the game underneath.

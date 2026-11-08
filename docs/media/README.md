@@ -30,10 +30,10 @@ Two notes on honesty, because a recording is evidence and evidence that lies is 
   mistaken for the behaviour of the version you are reading about.
 
 The GIFs are not in Git LFS: crates.io rewrites a relative image path to
-`https://github.com/bevy-coven/bevy_fairy/raw/HEAD/<path>`, which an LFS pointer does not serve.
+`https://github.com/dark-incorporated/bevy_fairy/raw/HEAD/<path>`, which an LFS pointer does not serve.
 
 The recorder's own ffmpeg filter is the one the org's
-[documentation guide](https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md) gives, with
+[documentation guide](https://github.com/dark-incorporated/.github/blob/main/DOCUMENTATION.md) gives, with
 one palette built from every pixel of every frame (`stats_mode=full`): with `stats_mode=diff` the
 crates, which never move, got no colours of their own and came out grey.
 

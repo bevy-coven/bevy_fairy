@@ -15,7 +15,7 @@
 
 An MCP server plus a companion Bevy plugin that let an agent inspect and drive a **running** Bevy game: live entity/component/resource queries, offscreen frame capture, and keyboard/mouse injection.
 
-README and docs follow https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
+README and docs follow https://github.com/dark-incorporated/.github/blob/main/DOCUMENTATION.md; a feature is not done until its README line and, if visible, its GIF exist.
 
 ## Force pushes and deletions need the user's express permission
 
@@ -29,7 +29,7 @@ When one of these seems necessary, stop and ask. Name the exact command, what it
 
 ## Source of truth
 
-This standalone repo, `bevy-coven/bevy_fairy`, is the source of truth for the crate, on Bevy 0.20 (Sanctuary decision 0232, 2026-10-19). It was a pinned git dependency, then vendored into `Ladvien/foundation_vs_slop` with `git subtree add` and mirrored back out of it. The monorepo's copy is now a frozen Bevy 0.19 copy that is never mirrored again, and `bevy-coven/bevy_grimoire` depends on this repo by git. A bug found while driving a game is an ordinary edit here, followed by a push.
+This standalone repo, `dark-incorporated/bevy_fairy`, is the source of truth for the crate, on Bevy 0.20 (Sanctuary decision 0232, 2026-10-19). It was a pinned git dependency, then vendored into `Ladvien/foundation_vs_slop` with `git subtree add` and mirrored back out of it. The monorepo's copy is now a frozen Bevy 0.19 copy that is never mirrored again, and `dark-incorporated/bevy_dark_factory` depends on this repo by git. A bug found while driving a game is an ordinary edit here, followed by a push.
 
 ## One crate, two halves
 

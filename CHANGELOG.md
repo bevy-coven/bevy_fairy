@@ -9,7 +9,7 @@ Covers everything since 0.12.0 (semver-checks: 4 major checks: `ScreenshotParams
 Breaking: `bevy_fairy/screenshot`'s `region` and the `screenshot` tool's `region` are gone, replaced by
 `rect`, which refuses a rectangle the old one would have clamped (issue #15). The README, `docs/` and
 the media were also brought to the org's
-[documentation guide](https://github.com/bevy-coven/.github/blob/main/DOCUMENTATION.md), and the
+[documentation guide](https://github.com/dark-incorporated/.github/blob/main/DOCUMENTATION.md), and the
 crate moved to edition 2024.
 
 ### Added
