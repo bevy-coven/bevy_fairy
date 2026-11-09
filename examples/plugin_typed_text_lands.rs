@@ -50,7 +50,7 @@ fn main() {
     let mut app = App::new();
     // `MinimalPlugins` gives a schedule and nothing else — no window, no renderer. `InputPlugin` is
     // added on its own because it owns the systems that fold this crate's messages into `ButtonInput`;
-    // without it the injection is accepted and read by nobody, which is what `DebuggerPlugin::finish`
+    // without it the injection is accepted and read by nobody, which is what `FairyPlugin::finish`
     // asserts against.
     app.add_plugins(MinimalPlugins)
         .add_plugins(bevy::input::InputPlugin)

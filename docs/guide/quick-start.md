@@ -10,7 +10,7 @@ The shortest path, with a link at each step to the page that explains it.
    ```
 
 2. **Add the plugin to your game.** `bevy_fairy = { version = "0.12", default-features = false,
-   features = ["plugin"] }`, then `.add_plugins(DebuggerPlugin::default())` and a transport
+   features = ["plugin"] }`, then `.add_plugins(FairyPlugin::default())` and a transport
    ([install.md](install.md)).
 
 3. **Register the server with your agent**, from your project directory:

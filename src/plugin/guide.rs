@@ -49,6 +49,8 @@ use std::collections::{HashMap, VecDeque};
 use bevy::ecs::system::SystemId;
 use bevy::prelude::*;
 use bevy::remote::{error_codes, BrpError, BrpResult};
+
+use super::FairySystems;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -141,7 +143,7 @@ pub struct StepRecord {
 
 /// The script, where the person is in it, and what happened.
 ///
-/// Registered by [`crate::DebuggerPlugin`], and **independently `init_resource`-able**: a host's
+/// Registered by [`crate::FairyPlugin`], and **independently `init_resource`-able**: a host's
 /// headless harness may want the resource without the plugin, because the plugin's transport binds a
 /// port and a test process builds several `App`s.
 #[derive(Resource, Default)]
@@ -516,7 +518,7 @@ pub fn handle_guide(
 }
 
 /// Runs the current step's checkpoint, once per frame while a step with one is current, and advances
-/// the step when it passes. Registered by [`crate::DebuggerPlugin`] in `Last`, so it sees the frame's
+/// the step when it passes. Registered by [`crate::FairyPlugin`] in `Last`, so it sees the frame's
 /// finished state and runs ahead of the BRP handlers in `RemoteLast`.
 ///
 /// **This is the one place a checkpoint is evaluated.** It is a plain system that queues the
@@ -589,7 +591,7 @@ pub fn watch_guide(In(_params): In<Option<Value>>, world: &mut World) -> BrpResu
     let Some(mut guide) = world.get_resource_mut::<Guide>() else {
         return Err(BrpError {
             code: error_codes::INTERNAL_ERROR,
-            message: "no Guide resource; add DebuggerPlugin or init_resource::<Guide>()".to_string(),
+            message: "no Guide resource; add FairyPlugin or init_resource::<Guide>()".to_string(),
             data: None,
         });
     };
@@ -673,7 +675,8 @@ pub fn tick_guide(time: Res<Time>, mut guide: ResMut<Guide>) {
 // ── the overlay ──────────────────────────────────────────────────────────────────────────────────
 
 /// The overlay's root. `Display::None` when there is nothing to say.
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component, Default)]
 pub struct GuideOverlay;
 
 /// Where the step's lines are rebuilt, so the frame around them is spawned once.
@@ -691,7 +694,7 @@ struct Showing(Option<(usize, bool, u64)>);
 /// back with ANIM ghosting through STEP 1 OF 8 at 0.92 alpha. Guessing a bigger number would only
 /// move the collision to a host with a taller bar.
 ///
-/// So the host says. [`crate::DebuggerPlugin`] `init_resource`s this — insert-if-absent — so a host
+/// So the host says. [`crate::FairyPlugin`] `init_resource`s this — insert-if-absent — so a host
 /// that `insert_resource`s its own value wins whichever order the plugins are added in.
 #[derive(Resource)]
 pub struct GuidePlacement {
@@ -867,14 +870,18 @@ fn line(p: &mut ChildSpawnerCommands, text: String, colour: Color, size: f32) {
     p.spawn((Text::new(text), TextColor(colour), TextFont::from_font_size(size)));
 }
 
-/// The overlay's systems, kept together so [`crate::DebuggerPlugin`] adds one thing.
+/// The overlay's systems, kept together so [`crate::FairyPlugin`] adds one thing.
 pub struct GuideOverlayPlugin;
 
 impl Plugin for GuideOverlayPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Showing>()
             .init_resource::<GuidePlacement>()
-            .add_systems(Startup, spawn_guide_overlay)
-            .add_systems(Update, (tick_guide, paint_guide).chain());
+            .register_type::<GuideOverlay>()
+            .add_systems(Startup, spawn_guide_overlay.in_set(FairySystems))
+            .add_systems(
+                Update,
+                (tick_guide, paint_guide).chain().in_set(FairySystems),
+            );
     }
 }

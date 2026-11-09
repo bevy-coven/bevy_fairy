@@ -23,13 +23,13 @@ bevy_fairy = { version = "0.12", default-features = false, features = ["plugin"]
 ```rust,no_run
 use bevy::prelude::*;
 use bevy::remote::http::RemoteHttpPlugin;
-use bevy_fairy::DebuggerPlugin;
+use bevy_fairy::FairyPlugin;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         // Owns the BRP RemotePlugin. Never add a second RemotePlugin next to it.
-        .add_plugins(DebuggerPlugin::default())
+        .add_plugins(FairyPlugin::default())
         .add_plugins(RemoteHttpPlugin::default())
         .add_systems(Startup, setup)
         .add_systems(Update, game_systems)
@@ -37,7 +37,7 @@ fn main() {
 }
 ```
 
-**Do not add `RemotePlugin` yourself.** `DebuggerPlugin` adds it, and Bevy rejects a duplicate
+**Do not add `RemotePlugin` yourself.** `FairyPlugin` adds it, and Bevy rejects a duplicate
 plugin by name — a game that adds it twice panics on start. Add a transport such as
 `RemoteHttpPlugin` and nothing else.
 
@@ -60,7 +60,7 @@ use bevy::remote::http::RemoteHttpPlugin;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DebuggerPlugin::default())
+        .add_plugins(FairyPlugin::default())
         .add_plugins(RemoteHttpPlugin::default().with_port(15703))
         .run();
 }
@@ -81,7 +81,7 @@ fn main() {
     app.add_plugins(DefaultPlugins);
 
     #[cfg(debug_assertions)]
-    app.add_plugins(DebuggerPlugin::default())
+    app.add_plugins(FairyPlugin::default())
         .add_plugins(RemoteHttpPlugin::default());
 
     app.run();
@@ -108,7 +108,7 @@ Each `plugin-*` feature turns on the BRP methods listed in
 ## A host that loads for a while
 
 If the game needs time to load, build the plugin with
-`DebuggerPlugin::default().host_signals_ready()` and set the `DebugReady` resource to `true` when it
+`FairyPlugin::default().host_signals_ready()` and set the `DebugReady` resource to `true` when it
 is; until then every command answers "not ready yet" instead of failing halfway.
 
 A host that owns `Time<Virtual>` (its own pause or slow motion) adds `.host_owns_clock()` and reads

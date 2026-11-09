@@ -48,7 +48,7 @@ struct Tile {
 fn main() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
-        // In a real host this is `DebuggerPlugin`, which inits both resources, adds the overlay and
+        // In a real host this is `FairyPlugin`, which inits both resources, adds the overlay and
         // evaluates each step's checkpoint once a frame. Spelled out here so the example shows what
         // a host actually needs.
         .init_resource::<Guide>()

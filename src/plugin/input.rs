@@ -375,9 +375,9 @@ impl PendingInput {
 /// therefore survives the clear that erased the old direct `ButtonInput` write — the same fact, used
 /// from the other side.
 ///
-/// Registered by [`DebuggerPlugin`](crate::DebuggerPlugin). A host building its own schedule must keep
+/// Registered by [`FairyPlugin`](crate::FairyPlugin). A host building its own schedule must keep
 /// `.before(InputSystems)` **and** must have added `InputPlugin`, or nothing folds these messages and
-/// the injection is silently inert. `DebuggerPlugin::finish` asserts the latter rather than leaving it
+/// the injection is silently inert. `FairyPlugin::finish` asserts the latter rather than leaving it
 /// to be discovered.
 ///
 /// It must also `init_resource::<DebugCursor>()` — in Bevy 0.20 a missing `ResMut<T>` panics the system

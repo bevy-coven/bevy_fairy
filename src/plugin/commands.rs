@@ -108,10 +108,10 @@ pub trait DebugCommandsAppExt {
     ///
     /// # Panics
     ///
-    /// Panics at startup, not at call time, when the registration is wrong: `DebuggerPlugin` was not
+    /// Panics at startup, not at call time, when the registration is wrong: `FairyPlugin` was not
     /// added first, the name is empty or reserved (`bevy_fairy/`, `world.`, `registry.`, `rpc.`,
     /// `schedule.`), the name is already registered, or `info.example` does not parse as `P`. These
-    /// are programmer errors, the same policy as [`DebuggerPlugin::finish`](crate::DebuggerPlugin).
+    /// are programmer errors, the same policy as [`FairyPlugin::finish`](crate::FairyPlugin).
     fn add_debug_command<P, M>(
         &mut self,
         info: DebugCommandInfo,
@@ -164,7 +164,7 @@ fn register<P, M>(
 {
     let name = info.name.clone();
     if !app.world().contains_resource::<RemoteMethods>() {
-        panic!("add DebuggerPlugin before add_debug_command");
+        panic!("add FairyPlugin before add_debug_command");
     }
     if !builtin && is_reserved(&name) {
         panic!("debug command `{name}` is reserved or empty; use `<game>/<verb>`");

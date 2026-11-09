@@ -9,7 +9,7 @@
 //! `First`, ahead of bevy_time's own clock system, applies the request every frame, so a host that
 //! writes `Time<Virtual>` later in the frame (an `unpause`, a `set_relative_speed`) cannot undo it.
 //! A host that must combine the request with its own holds and slow motion turns that system off with
-//! `DebuggerPlugin::host_owns_clock` and reads [`ClockRequest`] itself. Either way the reply says
+//! `FairyPlugin::host_owns_clock` and reads [`ClockRequest`] itself. Either way the reply says
 //! whether the request held, measured on the frame after it was made (issue #10).
 
 use bevy::prelude::*;
@@ -81,9 +81,14 @@ pub(crate) struct ClockState {
 pub(crate) fn register(app: &mut App, host_owned: bool) {
     app.init_resource::<ClockRequest>()
         .insert_resource(ClockState { host_owned, ..default() })
-        .add_systems(First, observe_clock.after(TimeSystems));
+        .add_systems(First, observe_clock.after(TimeSystems).in_set(super::FairySystems));
     if !host_owned {
-        app.add_systems(First, apply_request.before(TimeSystems));
+        app.add_systems(
+            First,
+            apply_request
+                .before(TimeSystems)
+                .in_set(super::FairySystems),
+        );
     }
     add_builtin_command::<TimeParams, _>(
         app,

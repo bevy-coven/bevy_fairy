@@ -32,7 +32,7 @@
 
 use bevy::prelude::*;
 use bevy_fairy::{
-    evaluate_checkpoint, handle_guide, watch_guide, Checkpoints, DebuggerPlugin, Guide,
+    evaluate_checkpoint, handle_guide, watch_guide, Checkpoints, FairyPlugin, Guide,
     GuideOverlayPlugin, Step, BEAT_SECONDS,
 };
 use bevy::ecs::system::RunSystemOnce;
@@ -71,7 +71,7 @@ fn register_ready(app: &mut App) {
 /// registers and nothing the test added. Still no transport, no window, no GPU.
 fn plugin_app() -> App {
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, DebuggerPlugin::default()))
+    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, FairyPlugin::default()))
         .init_resource::<Ready>();
     register_ready(&mut app);
     app.update();
@@ -548,7 +548,7 @@ fn the_one_script_this_crate_ships_is_ascii() {
 /// the plugin cannot know a host has a tab bar; only a frame could.
 ///
 /// What a test *can* pin is that the host's answer is honoured, and honoured **whichever order the
-/// plugins are added in**. `DebuggerPlugin` uses `init_resource`, which is insert-if-absent, so a
+/// plugins are added in**. `FairyPlugin` uses `init_resource`, which is insert-if-absent, so a
 /// host that `insert_resource`s its own value wins from either side. Getting that backwards would put
 /// the card back on the tab bar and nothing would say so.
 #[test]

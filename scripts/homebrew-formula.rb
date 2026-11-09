@@ -60,7 +60,7 @@ class BevyDebuggerMcp < Formula
       Configuration file is located at:
         ~/.config/bevy-fairy/config.toml
 
-      Add bevy_fairy's DebuggerPlugin (feature `plugin`) to your Bevy game.
+      Add bevy_fairy's FairyPlugin (feature `plugin`) to your Bevy game.
     EOS
   end
 

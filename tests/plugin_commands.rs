@@ -15,14 +15,14 @@ use bevy::prelude::*;
 use bevy::remote::{error_codes, BrpResult, RemoteMethodSystemId, RemoteMethods};
 use bevy::time::Virtual;
 use bevy_fairy::{
-    DebugCommandInfo, DebugCommandsAppExt, DebugReady, DebuggerPlugin, SceneLog, SceneStep,
+    DebugCommandInfo, DebugCommandsAppExt, DebugReady, FairyPlugin, SceneLog, SceneStep,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
 
 const SCENE_VAR: &str = "BEVY_FAIRY_SCENE";
 
-/// Serialises app construction: `DebuggerPlugin` reads `BEVY_FAIRY_SCENE` while it builds, and the
+/// Serialises app construction: `FairyPlugin` reads `BEVY_FAIRY_SCENE` while it builds, and the
 /// test harness runs tests on several threads, so one test's variable must not leak into another's app.
 static BUILD_LOCK: Mutex<()> = Mutex::new(());
 
@@ -32,7 +32,7 @@ fn build_lock() -> MutexGuard<'static, ()> {
 }
 
 /// Builds an app the way a host does: `MinimalPlugins`, `InputPlugin` (required by the plugin), and
-/// `DebuggerPlugin`. `host_signals` makes the game report not ready until the test flips it.
+/// `FairyPlugin`. `host_signals` makes the game report not ready until the test flips it.
 fn new_app(host_signals: bool, scene: Option<&Path>) -> App {
     let _guard = build_lock();
     // # Safety
@@ -47,9 +47,9 @@ fn new_app(host_signals: bool, scene: Option<&Path>) -> App {
         }
     }
     let plugin = if host_signals {
-        DebuggerPlugin::default().host_signals_ready()
+        FairyPlugin::default().host_signals_ready()
     } else {
-        DebuggerPlugin::default()
+        FairyPlugin::default()
     };
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, plugin));

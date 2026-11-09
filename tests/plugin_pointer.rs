@@ -19,7 +19,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{TextureFormat, TextureUsages};
 use bevy::render::settings::{RenderCreation, WgpuSettings};
 use bevy::render::RenderPlugin;
-use bevy_fairy::{handle_input, DebugCaptureTarget, DebuggerPlugin};
+use bevy_fairy::{handle_input, DebugCaptureTarget, FairyPlugin};
 use serde_json::{json, Value};
 
 #[path = "helpers/headless.rs"]
@@ -59,7 +59,7 @@ fn app(offscreen: bool) -> (App, Entity) {
                 ..default()
             }),
     )
-    .add_plugins(DebuggerPlugin::default())
+    .add_plugins(FairyPlugin::default())
     .init_resource::<Seen>();
 
     let mut camera = app.world_mut().spawn(Camera2d);

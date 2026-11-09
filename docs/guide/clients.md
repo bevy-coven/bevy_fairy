@@ -64,7 +64,7 @@ binary is not the one this crate builds: check `which bevy-fairy`.
 | Symptom | Cause and fix |
 |---|---|
 | `status` says no game is answering | The game is not running, or `BEVY_BRP_HOST`/`BEVY_BRP_PORT` do not point at it. The default is `localhost:15702`. |
-| The game panics on start | You added a second `RemotePlugin`. `DebuggerPlugin` adds its own; add only a transport such as `RemoteHttpPlugin`. Or `InputPlugin` is missing: `DefaultPlugins` has it, `MinimalPlugins` does not. |
+| The game panics on start | You added a second `RemotePlugin`. `FairyPlugin` adds its own; add only a transport such as `RemoteHttpPlugin`. Or `InputPlugin` is missing: `DefaultPlugins` has it, `MinimalPlugins` does not. |
 | The agent sees no `bevy-fairy` tools | The client cannot find the binary. Run `bevy-fairy --version`; if that works, give `command` as the full path (`~/.cargo/bin/bevy-fairy`) and restart the client. |
 | `screenshot` says `bevy_fairy/screenshot` is not registered | Build the game with the `plugin-screenshot` feature. |
 | A `+watch` method is refused by `brp` | Watching methods stream; `brp` returns one answer per call. Sample it with `watch` instead. |

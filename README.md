@@ -27,20 +27,20 @@ cargo add bevy_fairy --no-default-features --features plugin
 ```rust,no_run
 use bevy::prelude::*;
 use bevy::remote::http::RemoteHttpPlugin;
-use bevy_fairy::DebuggerPlugin;
+use bevy_fairy::FairyPlugin;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         // Owns the BRP RemotePlugin. Never add a second one next to it.
-        .add_plugins(DebuggerPlugin::default())
+        .add_plugins(FairyPlugin::default())
         // Serves the bevy_fairy/* methods on 127.0.0.1:15702.
         .add_plugins(RemoteHttpPlugin::default())
         .run();
 }
 ```
 
-`DebuggerPlugin` adds Bevy's `RemotePlugin` itself, so adding one as well panics on start, and it needs `InputPlugin`, which `DefaultPlugins` has and `MinimalPlugins` does not.
+`FairyPlugin` adds Bevy's `RemotePlugin` itself, so adding one as well panics on start, and it needs `InputPlugin`, which `DefaultPlugins` has and `MinimalPlugins` does not.
 
 ```sh
 cargo install bevy_fairy --no-default-features --features server
@@ -50,7 +50,7 @@ curl -s localhost:15702 -d '{"jsonrpc":"2.0","id":1,"method":"bevy_fairy/status"
 ```
 
 ```text
-agent ──MCP over stdio──▶ bevy-fairy ──BRP over HTTP :15702──▶ your game + DebuggerPlugin
+agent ──MCP over stdio──▶ bevy-fairy ──BRP over HTTP :15702──▶ your game + FairyPlugin
                                                                         │
                                                     card on screen ▼    │
                                                           the person at the keyboard

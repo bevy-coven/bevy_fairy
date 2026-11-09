@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+Breaking: `DebuggerPlugin` is `FairyPlugin` (the family's entry-point name), and `server::prelude` (re-exported as `bevy_fairy::prelude`) is gone: its items (`BrpClient`, `BrpRequest`, `BrpResponse`, `Error`, `Result`, `QueryParser`, `RegexQueryParser`, `Action`, `ActionExecutor`, `ActionResult`, `Hypothesis`, `TestResult`, `TestRunner`, `BranchId`, `TimelineBranchManager`, `Recording`, `RecordingState`, `PlaybackState`) are re-exported flat at the crate root with the `server` feature. `FairySystems` is the crate's one root set and holds every system `FairyPlugin` adds, the guide overlay's included; `GuideOverlay` derives `Reflect` with `#[reflect(Component)]`. The crate has no settings resources. `tests/machine_plate.rs` checks the set and the reflection.
+
 ## 0.13.0 - 2026-11-06
 
 Covers everything since 0.12.0 (semver-checks: 4 major checks: `ScreenshotParams.region`,

@@ -7,7 +7,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy::remote::{BrpResult, RemoteMethodSystemId, RemoteMethods};
 use bevy::time::TimeUpdateStrategy;
-use bevy_fairy::DebuggerPlugin;
+use bevy_fairy::FairyPlugin;
 use serde_json::{json, Value};
 
 #[derive(Component, Reflect, Default)]
@@ -24,7 +24,7 @@ fn bump(mut counters: Query<&mut Counter>) {
 
 fn app() -> App {
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, DebuggerPlugin::default()));
+    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, FairyPlugin::default()));
     app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(16)));
     app.register_type::<Counter>();
     app.world_mut().spawn(Counter(0));
@@ -140,7 +140,7 @@ fn rise(mut gauges: Query<&mut Gauge>) {
 /// A gauge holding `start`, which rises by 1.0 a frame when `rising`.
 fn gauge_app(start: f32, rising: bool) -> App {
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, DebuggerPlugin::default()));
+    app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, FairyPlugin::default()));
     app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(16)));
     app.register_type::<Gauge>();
     app.world_mut().spawn(Gauge(start));

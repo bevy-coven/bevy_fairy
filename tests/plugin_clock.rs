@@ -9,12 +9,12 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy::remote::{BrpResult, RemoteMethodSystemId, RemoteMethods};
 use bevy::time::{TimeUpdateStrategy, Virtual};
-use bevy_fairy::{ClockRequest, DebuggerPlugin};
+use bevy_fairy::{ClockRequest, FairyPlugin};
 use serde_json::{json, Value};
 
 const FRAME: Duration = Duration::from_millis(16);
 
-fn app_with(plugin: DebuggerPlugin) -> App {
+fn app_with(plugin: FairyPlugin) -> App {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::input::InputPlugin, plugin));
     app.insert_resource(TimeUpdateStrategy::ManualDuration(FRAME));
@@ -61,7 +61,7 @@ fn host_slows_to_half(mut time: ResMut<Time<Virtual>>) {
 
 #[test]
 fn a_pause_holds_against_a_host_that_unpauses_every_frame() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     app.add_systems(Update, host_unpauses);
     let free = run(&mut app, 10);
     assert!(free > Duration::ZERO, "the clock runs before any request");
@@ -77,7 +77,7 @@ fn a_pause_holds_against_a_host_that_unpauses_every_frame() {
 
 #[test]
 fn a_speed_holds_against_a_host_that_resets_it_every_frame() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     app.add_systems(Update, host_sets_speed_to_one);
     let baseline = run(&mut app, 60);
 
@@ -93,7 +93,7 @@ fn a_speed_holds_against_a_host_that_resets_it_every_frame() {
 
 #[test]
 fn a_host_that_owns_the_clock_is_never_written_to_and_learns_the_request() {
-    let mut app = app_with(DebuggerPlugin::default().host_owns_clock());
+    let mut app = app_with(FairyPlugin::default().host_owns_clock());
     app.add_systems(Update, host_unpauses);
 
     let reply = call(&mut app, Some(json!({ "pause": true, "speed": 2.0 }))).expect("answers");
@@ -111,7 +111,7 @@ fn a_host_that_owns_the_clock_is_never_written_to_and_learns_the_request() {
 
 #[test]
 fn a_request_survives_a_host_state_change_until_cleared() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     app.add_systems(Update, host_unpauses);
     call(&mut app, Some(json!({ "pause": true }))).expect("time answers");
     run(&mut app, 5);
@@ -126,7 +126,7 @@ fn a_request_survives_a_host_state_change_until_cleared() {
 
 #[test]
 fn an_empty_call_reports_the_clock_and_whether_the_request_held() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     run(&mut app, 3);
     let read = call(&mut app, None).expect("read");
     assert_eq!(read["paused"], false, "{read}");
@@ -137,7 +137,7 @@ fn an_empty_call_reports_the_clock_and_whether_the_request_held() {
 
 #[test]
 fn a_request_is_not_called_held_before_a_frame_has_run_under_it() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     run(&mut app, 3);
     let reply = call(&mut app, Some(json!({ "pause": true }))).expect("answers");
     assert!(reply["held"].is_null(), "held claimed with no frame observed: {reply}");
@@ -149,7 +149,7 @@ fn a_request_is_not_called_held_before_a_frame_has_run_under_it() {
 /// clock never sees it (issue #12).
 #[test]
 fn a_speed_the_clock_cannot_represent_is_refused_not_applied() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     for bad in [1e30, 1e21, f32::MAX, 1000.5] {
         let err = call(&mut app, Some(json!({ "speed": bad }))).expect_err("a speed above the bound");
         assert!(err.message.contains("speed"), "{err:?}");
@@ -163,7 +163,7 @@ fn a_speed_the_clock_cannot_represent_is_refused_not_applied() {
 /// The bound itself is accepted and the game keeps running at it.
 #[test]
 fn the_largest_speed_the_command_accepts_runs() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     call(&mut app, Some(json!({ "speed": 1000.0 }))).expect("the bound is allowed");
     run(&mut app, 3);
     let read = call(&mut app, None).expect("read");
@@ -175,7 +175,7 @@ fn the_largest_speed_the_command_accepts_runs() {
 /// said false there, which read as "the host is fighting the clock" when nothing touched it.
 #[test]
 fn a_speed_the_engine_clamps_is_held_and_says_it_was_clamped() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     call(&mut app, Some(json!({ "speed": 20.0 }))).expect("answers");
     run(&mut app, 3);
     let read = call(&mut app, None).expect("read");
@@ -196,7 +196,7 @@ fn a_speed_the_engine_clamps_is_held_and_says_it_was_clamped() {
 /// still not held, because its speed is not the request's.
 #[test]
 fn a_host_that_ignores_a_clamped_speed_is_still_not_held() {
-    let mut app = app_with(DebuggerPlugin::default().host_owns_clock());
+    let mut app = app_with(FairyPlugin::default().host_owns_clock());
     call(&mut app, Some(json!({ "speed": 20.0 }))).expect("answers");
     run(&mut app, 3);
     let read = call(&mut app, None).expect("read");
@@ -209,7 +209,7 @@ fn a_host_that_ignores_a_clamped_speed_is_still_not_held() {
 /// the agent read "the clock obeyed" next to a clock that had not moved.
 #[test]
 fn an_unpause_the_host_overrides_is_not_held() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     app.add_systems(Update, host_pauses);
     run(&mut app, 5);
 
@@ -224,7 +224,7 @@ fn an_unpause_the_host_overrides_is_not_held() {
 /// running the world at half speed read as `held: true` beside `effective_speed: 0.5`.
 #[test]
 fn a_speed_of_one_the_host_overrides_is_not_held() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     app.add_systems(Update, host_slows_to_half);
     run(&mut app, 5);
 
@@ -239,7 +239,7 @@ fn a_speed_of_one_the_host_overrides_is_not_held() {
 /// did not turn `held` into a constant `false` for requests that ask for nothing unusual.
 #[test]
 fn an_unpause_and_a_speed_of_one_nobody_overrides_are_held() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     call(&mut app, Some(json!({ "pause": true }))).expect("answers");
     run(&mut app, 5);
     call(&mut app, Some(json!({ "pause": false, "speed": 1.0 }))).expect("answers");
@@ -254,7 +254,7 @@ fn an_unpause_and_a_speed_of_one_nobody_overrides_are_held() {
 /// not held. While the clock is frozen the speed it will resume at is not what was asked about.
 #[test]
 fn a_pause_is_held_beside_a_hosts_own_slow_motion() {
-    let mut app = app_with(DebuggerPlugin::default());
+    let mut app = app_with(FairyPlugin::default());
     app.add_systems(Update, host_slows_to_half);
     run(&mut app, 5);
 

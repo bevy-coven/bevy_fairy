@@ -24,7 +24,7 @@ use bevy::app::ScheduleRunnerPlugin;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::remote::http::RemoteHttpPlugin;
-use bevy_fairy::DebuggerPlugin;
+use bevy_fairy::FairyPlugin;
 
 /// The weight of every [`Crate`] the game spawns, in spawn order. The last one is the
 /// deliberately odd value: a crate cannot weigh less than nothing.
@@ -98,7 +98,7 @@ pub fn build_app(port: u16, fps: f64) -> App {
     )
     .add_plugins(InputPlugin)
     // Owns the BRP RemotePlugin. Never add a second RemotePlugin next to it.
-    .add_plugins(DebuggerPlugin::default())
+    .add_plugins(FairyPlugin::default())
     .add_plugins(RemoteHttpPlugin::default().with_port(port))
     .register_type::<Crate>()
     .register_type::<Score>()

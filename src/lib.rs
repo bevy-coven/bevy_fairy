@@ -48,19 +48,19 @@
 //! ```text
 //! use bevy::prelude::*;
 //! use bevy::remote::http::RemoteHttpPlugin;
-//! use bevy_fairy::plugin::DebuggerPlugin;
+//! use bevy_fairy::plugin::FairyPlugin;
 //!
 //! fn main() {
 //!     App::new()
 //!         .add_plugins(DefaultPlugins)
 //!         // Owns the BRP RemotePlugin. Never add a second RemotePlugin next to it.
-//!         .add_plugins(DebuggerPlugin::default())
+//!         .add_plugins(FairyPlugin::default())
 //!         .add_plugins(RemoteHttpPlugin::default())
 //!         .run();
 //! }
 //! ```
 //!
-//! `DebuggerPlugin` needs `bevy::input::InputPlugin` in the app. `DefaultPlugins` includes it;
+//! `FairyPlugin` needs `bevy::input::InputPlugin` in the app. `DefaultPlugins` includes it;
 //! `MinimalPlugins` does not.
 //!
 //! ## Quick start: an agent
@@ -96,13 +96,13 @@ pub mod crop;
 pub use crop::{crop_png, Crop, CropRect};
 
 // The plugin's own items are re-exported at the root, so a game writes
-// `use bevy_fairy::DebuggerPlugin` rather than `use bevy_fairy::plugin::DebuggerPlugin`. The
+// `use bevy_fairy::FairyPlugin` rather than `use bevy_fairy::plugin::FairyPlugin`. The
 // module is still there for anyone who wants to be explicit.
 #[cfg(feature = "plugin")]
 pub use plugin::{
     apply_pending_input, cursor_position, handle_input, ClockRequest, logical_for, typed, DebugCommandInfo,
-    DebugCommands, DebugCommandsAppExt, DebugCursor, DebugReady, DebuggerPlugin, InputAction,
-    InputCommand, InputKind, PendingInput, SceneLog, ScenePlayback, SceneStep,
+    DebugCommands, DebugCommandsAppExt, DebugCursor, DebugReady, FairyPlugin, InputAction,
+    FairySystems, InputCommand, InputKind, PendingInput, SceneLog, ScenePlayback, SceneStep,
 };
 
 // The guide overlay and the capture target, which are their own features.
@@ -115,8 +115,19 @@ pub use plugin::{
 #[cfg(feature = "plugin-screenshot")]
 pub use plugin::{handle_screenshot, CaptureState, Captures, DebugCaptureTarget, Provenance, ScreenshotParams};
 
+// The server's commonly used types, flat at the root: there is no `prelude` module.
 #[cfg(feature = "server")]
-pub use server::prelude;
+pub use server::{
+    brp::{BrpRequest, BrpResponse},
+    brp_client::BrpClient,
+    error::{Error, Result},
+    experiment_system::{Action, ActionExecutor, ActionResult},
+    hypothesis_system::{Hypothesis, TestResult, TestRunner},
+    playback_system::PlaybackState,
+    query_parser::{QueryParser, RegexQueryParser},
+    recording_system::{Recording, RecordingState},
+    timeline_branching::{BranchId, TimelineBranchManager},
+};
 
 #[cfg(feature = "server")]
 pub use server::brp as brp_messages;

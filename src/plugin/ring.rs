@@ -84,7 +84,8 @@ pub(crate) struct Ring {
 }
 
 pub(crate) fn register(app: &mut App) {
-    app.init_resource::<Ring>().add_systems(Last, record.after(crate::plugin::ready::tick_frames));
+    app.init_resource::<Ring>()
+        .add_systems(Last, record.after(crate::plugin::ready::tick_frames).in_set(super::FairySystems));
     add_builtin_command::<RingParams, _>(
         app,
         DebugCommandInfo::new(

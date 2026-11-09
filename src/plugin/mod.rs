@@ -1,14 +1,14 @@
 //! The game-side half of `bevy_fairy`: a Bevy plugin that lets a coding agent
 //! drive a running game over BRP (JSON-RPC over HTTP), without a shared filesystem.
 //!
-//! Adding [`DebuggerPlugin`] gives the game:
+//! Adding [`FairyPlugin`] gives the game:
 //!
 //! - **Game commands.** [`DebugCommandsAppExt::add_debug_command`] registers a typed
 //!   handler under a `<game>/<verb>` name. Its params are parsed, and its example is
 //!   checked at startup. Commands are discovered at run time through
 //!   `bevy_fairy/commands`, so an agent learns the vocabulary from the game itself.
 //! - **Readiness.** `bevy_fairy/status` says whether the game has finished loading.
-//!   Commands answer "not ready" until then. Use [`DebuggerPlugin::host_signals_ready`]
+//!   Commands answer "not ready" until then. Use [`FairyPlugin::host_signals_ready`]
 //!   to take control of that signal.
 //! - **Captures.** `bevy_fairy/screenshot` starts a capture from the host's
 //!   offscreen image or from the primary window. `bevy_fairy/capture` returns the
@@ -41,12 +41,12 @@
 //! ```text
 //! use bevy::prelude::*;
 //! use bevy::remote::http::RemoteHttpPlugin;
-//! use bevy_fairy::{DebugCommandInfo, DebugCommandsAppExt, DebuggerPlugin};
+//! use bevy_fairy::{DebugCommandInfo, DebugCommandsAppExt, FairyPlugin};
 //!
 //! App::new()
 //!     .add_plugins(DefaultPlugins)
 //!     // Owns the BRP RemotePlugin. Never add a second RemotePlugin next to it.
-//!     .add_plugins(DebuggerPlugin::default())
+//!     .add_plugins(FairyPlugin::default())
 //!     .add_plugins(RemoteHttpPlugin::default())
 //!     .add_debug_command(
 //!         DebugCommandInfo::new("demo/spawn_cube", "Spawn a unit cube at a point.")
@@ -61,7 +61,7 @@
 //! # #[derive(serde::Deserialize)] struct SpawnCube { at: [f32; 3] }
 //! ```
 //!
-//! `DebuggerPlugin` needs `bevy::input::InputPlugin` in the app. `DefaultPlugins`
+//! `FairyPlugin` needs `bevy::input::InputPlugin` in the app. `DefaultPlugins`
 //! includes it; `MinimalPlugins` does not.
 
 use bevy::prelude::*;
@@ -116,17 +116,22 @@ pub(crate) fn brp_error(code: i16, message: impl Into<String>) -> BrpError {
     }
 }
 
+/// The one root set of the crate: every system [`FairyPlugin`] adds, the guide overlay's included, is
+/// in it, so a host orders its own systems `.before(FairySystems)` or `.after(FairySystems)`.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FairySystems;
+
 /// The game-side plugin. Add it before `RemoteHttpPlugin`, and do not add a second
 /// `RemotePlugin`: this plugin owns it and registers every `bevy_fairy/*` method.
 ///
 /// Requires `bevy::input::InputPlugin` in the app.
 #[derive(Default)]
-pub struct DebuggerPlugin {
+pub struct FairyPlugin {
     host_signals_ready: bool,
     host_owns_clock: bool,
 }
 
-impl DebuggerPlugin {
+impl FairyPlugin {
     /// Stops the plugin from reporting ready on its own. The host sets
     /// [`DebugReady`] to `true` when its scenes have loaded. Until then, every game
     /// command answers "not ready yet".
@@ -136,7 +141,7 @@ impl DebuggerPlugin {
     }
 }
 
-impl DebuggerPlugin {
+impl FairyPlugin {
     /// Stops the plugin from writing `Time<Virtual>`. `bevy_fairy/time` then only records a
     /// [`ClockRequest`]; the host reads it, ORs `pause` into its own hold and multiplies `speed` into
     /// its own factor. Without this, the plugin re-applies the request every frame, before
@@ -147,7 +152,7 @@ impl DebuggerPlugin {
     }
 }
 
-impl Plugin for DebuggerPlugin {
+impl Plugin for FairyPlugin {
     fn build(&self, app: &mut App) {
         let remote = RemotePlugin::default()
             .with_method_main("bevy_fairy/input", input::handle_input)
@@ -170,8 +175,8 @@ impl Plugin for DebuggerPlugin {
             .init_resource::<SceneLog>()
             .init_resource::<ready::FrameTicks>()
             .insert_resource(ready::GameInstance::new())
-            .add_systems(Last, ready::tick_frames)
-            .add_systems(Update, scene::replay_next_step);
+            .add_systems(Last, ready::tick_frames.in_set(FairySystems))
+            .add_systems(Update, scene::replay_next_step.in_set(FairySystems));
         #[cfg(feature = "plugin-screenshot")]
         app.init_resource::<Captures>();
 
@@ -190,7 +195,7 @@ impl Plugin for DebuggerPlugin {
             .init_resource::<guide::Checkpoints>()
             // After the host's frame, so a checkpoint reads the state this frame ended with, and
             // ahead of `RemoteLast`, where the watch stream reports what this recorded.
-            .add_systems(Last, guide::evaluate_checkpoint);
+            .add_systems(Last, guide::evaluate_checkpoint.in_set(FairySystems));
 
         // Injected keys and clicks are written as messages. `apply_pending_input` runs
         // before `InputSystems`, which folds those messages into `ButtonInput`.
@@ -204,7 +209,9 @@ impl Plugin for DebuggerPlugin {
             .init_resource::<input::DebugCursor>()
             .add_systems(
                 PreUpdate,
-                input::apply_pending_input.before(bevy::input::InputSystems),
+                input::apply_pending_input
+                    .before(bevy::input::InputSystems)
+                    .in_set(FairySystems),
             );
         // The image route writes `PointerInput` directly, which picking consumes in `ProcessInput`;
         // ahead of it, so a click lands the frame it is applied rather than the one after.
@@ -218,7 +225,7 @@ impl Plugin for DebuggerPlugin {
     fn finish(&self, app: &mut App) {
         assert!(
             app.is_plugin_added::<bevy::input::InputPlugin>(),
-            "DebuggerPlugin needs bevy::input::InputPlugin: injected keys and clicks are written as KeyboardInput/MouseButtonInput messages, and InputPlugin owns the systems that fold those into ButtonInput. Without it every injection is accepted and read by nobody. Add InputPlugin (DefaultPlugins includes it; MinimalPlugins does not)."
+            "FairyPlugin needs bevy::input::InputPlugin: injected keys and clicks are written as KeyboardInput/MouseButtonInput messages, and InputPlugin owns the systems that fold those into ButtonInput. Without it every injection is accepted and read by nobody. Add InputPlugin (DefaultPlugins includes it; MinimalPlugins does not)."
         );
     }
 }

@@ -190,7 +190,7 @@ fn assert_no_remote_plugin(what: &str, text: &str) {
         // A line that says the plugin owns it, or that says never to add a second one, is the
         // doc telling the reader the right thing.
         let lower = trimmed.to_lowercase();
-        let mentions_the_plugin = trimmed.contains("DebuggerPlugin");
+        let mentions_the_plugin = trimmed.contains("FairyPlugin");
         let warns = lower.contains("never")
             || lower.contains("not add")
             || lower.contains("do not add")
@@ -205,7 +205,7 @@ fn assert_no_remote_plugin(what: &str, text: &str) {
             continue;
         }
         panic!(
-            "{what} tells the reader to add `RemotePlugin` themselves, but `DebuggerPlugin` \
+            "{what} tells the reader to add `RemotePlugin` themselves, but `FairyPlugin` \
              already adds it. Bevy rejects a duplicate plugin by name, so the game panics on \
              start. Line: {trimmed}"
         );
@@ -365,7 +365,7 @@ fn no_doc_names_the_old_crate_or_the_old_package_path() {
     }
 }
 
-/// The plugin's public path. A game writes `use bevy_fairy::DebuggerPlugin`, and the docs have to
+/// The plugin's public path. A game writes `use bevy_fairy::FairyPlugin`, and the docs have to
 /// say the same thing, or a reader's first line of code does not compile.
 #[test]
 fn the_docs_name_the_plugin_the_way_the_crate_exports_it() {
@@ -388,7 +388,7 @@ fn the_docs_name_the_plugin_the_way_the_crate_exports_it() {
                 continue;
             }
             for name in [
-                "DebuggerPlugin",
+                "FairyPlugin",
                 "DebugCommandInfo",
                 "DebugCommandsAppExt",
                 "DebugCaptureTarget",

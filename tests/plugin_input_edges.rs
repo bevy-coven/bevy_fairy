@@ -46,17 +46,17 @@ fn observe(keys: Res<ButtonInput<KeyCode>>, mut seen: ResMut<Seen>) {
     });
 }
 
-/// An app wired the way [`DebuggerPlugin`](bevy_fairy::DebuggerPlugin) wires it.
+/// An app wired the way [`FairyPlugin`](bevy_fairy::FairyPlugin) wires it.
 fn app_correctly_ordered() -> App {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
         // Not optional, and no longer merely convenient: `ButtonInput` is now Bevy's fold of the
         // message stream this crate writes, and `InputPlugin` owns the systems that do the folding.
-        // `DebuggerPlugin::finish` asserts its presence for the same reason.
+        // `FairyPlugin::finish` asserts its presence for the same reason.
         .add_plugins(bevy::input::InputPlugin)
         .init_resource::<PendingInput>()
         // `apply_pending_input` writes the injected pointer here, and in Bevy 0.19 a missing
-        // `ResMut<T>` panics the system rather than skipping it. `DebuggerPlugin` inits this; a host
+        // `ResMut<T>` panics the system rather than skipping it. `FairyPlugin` inits this; a host
         // that registers the system by hand — as these tests do — has to init it too.
         .init_resource::<bevy_fairy::DebugCursor>()
         .init_resource::<Seen>()
@@ -155,7 +155,7 @@ fn ordering_after_input_systems_costs_a_frame() {
         .add_plugins(bevy::input::InputPlugin)
         .init_resource::<PendingInput>()
         // `apply_pending_input` writes the injected pointer here, and in Bevy 0.19 a missing
-        // `ResMut<T>` panics the system rather than skipping it. `DebuggerPlugin` inits this; a host
+        // `ResMut<T>` panics the system rather than skipping it. `FairyPlugin` inits this; a host
         // that registers the system by hand — as these tests do — has to init it too.
         .init_resource::<bevy_fairy::DebugCursor>()
         .init_resource::<Seen>()

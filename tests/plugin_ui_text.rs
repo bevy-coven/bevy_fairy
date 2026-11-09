@@ -10,7 +10,7 @@ use bevy::prelude::*;
 use bevy::remote::{BrpResult, RemoteMethodSystemId, RemoteMethods};
 use bevy::render::settings::{RenderCreation, WgpuSettings};
 use bevy::render::RenderPlugin;
-use bevy_fairy::DebuggerPlugin;
+use bevy_fairy::FairyPlugin;
 use serde_json::{json, Value};
 
 #[path = "helpers/headless.rs"]
@@ -53,7 +53,7 @@ fn app(ui_scale: f32) -> App {
                 ..default()
             }),
     )
-    .add_plugins(DebuggerPlugin::default())
+    .add_plugins(FairyPlugin::default())
     .insert_resource(UiScale(ui_scale));
 
     app.world_mut().spawn(Camera2d);

@@ -53,7 +53,7 @@ takes the card down and keeps the transcript, because the transcript is the resu
 
 The card has no camera of its own — a second `Camera2d` in somebody else's app is a bug waiting to
 happen — so it spawns into whatever UI tree the host already renders, and an app with no UI camera
-shows nothing. Its position and width are the host's: `DebuggerPlugin` `init_resource`s
+shows nothing. Its position and width are the host's: `FairyPlugin` `init_resource`s
 `GuidePlacement`, so a host that `insert_resource`s its own value wins whichever order the two
 plugins are added in. Dark Factory sets it to sit below the title line, so the card does not cover the
 panels it is talking about.

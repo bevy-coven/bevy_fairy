@@ -23,7 +23,7 @@ use bevy::prelude::*;
 use bevy::remote::http::RemoteHttpPlugin;
 use bevy::render::render_resource::TextureFormat;
 use bevy::camera::RenderTarget;
-use bevy_fairy::{DebugCaptureTarget, DebugCommandInfo, DebugCommandsAppExt, DebuggerPlugin};
+use bevy_fairy::{DebugCaptureTarget, DebugCommandInfo, DebugCommandsAppExt, FairyPlugin};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -69,7 +69,7 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, DebuggerPlugin::default(), RemoteHttpPlugin::default()))
+        .add_plugins((DefaultPlugins, FairyPlugin::default(), RemoteHttpPlugin::default()))
         .add_debug_command(
             DebugCommandInfo::new("demo/spawn_cube", "Spawn a red cube at a world position in metres")
                 .params("at: [x, y, z], the cube's centre in metres")

@@ -31,7 +31,7 @@ use bevy::prelude::*;
 use bevy::remote::http::RemoteHttpPlugin;
 use bevy::render::render_resource::TextureFormat;
 use bevy::window::ExitCondition;
-use bevy_fairy::{DebugCaptureTarget, DebugCommandInfo, DebugCommandsAppExt, DebuggerPlugin};
+use bevy_fairy::{DebugCaptureTarget, DebugCommandInfo, DebugCommandsAppExt, FairyPlugin};
 use fixture_game::{Crate, Mover, Score, Spinner};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -174,7 +174,7 @@ fn main() {
             1.0 / fps,
         )))
         // Owns the BRP RemotePlugin. Never add a second RemotePlugin next to it.
-        .add_plugins(DebuggerPlugin::default())
+        .add_plugins(FairyPlugin::default())
         .add_plugins(RemoteHttpPlugin::default().with_port(port))
         .register_type::<Crate>()
         .register_type::<Score>()

@@ -388,7 +388,7 @@ const QUIT_METHOD: &str = "bevy_fairy/quit";
 
 /// The text an agent reads when nothing answers. Kept exact, because agents match on it.
 fn no_game_text(url: &str) -> String {
-    format!("bevy-fairy: no game answering at {url} — start the game with DebuggerPlugin and RemoteHttpPlugin, or set BEVY_BRP_HOST/BEVY_BRP_PORT")
+    format!("bevy-fairy: no game answering at {url} — start the game with FairyPlugin and RemoteHttpPlugin, or set BEVY_BRP_HOST/BEVY_BRP_PORT")
 }
 
 /// What an agent reads when a request did not come back as a reply this server can read, in the

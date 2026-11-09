@@ -17,7 +17,7 @@ fn spawn_cube(In(p): In<SpawnCube>, mut commands: Commands) -> Result<Value, Str
     Ok(json!({ "spawned_at": p.at }))
 }
 
-// After .add_plugins(DebuggerPlugin::default()):
+// After .add_plugins(FairyPlugin::default()):
 app.add_debug_command(
     DebugCommandInfo::new("demo/spawn_cube", "Spawn a cube at a world position in metres")
         .params("at: [x, y, z]")
@@ -33,7 +33,7 @@ calls it.
 `serde(deny_unknown_fields)` is worth the line: without it a typo in the agent's params becomes a
 silent default, and the agent learns a shape that is not the real one.
 
-If your game needs time to load, build the plugin with `DebuggerPlugin::default().host_signals_ready()`
+If your game needs time to load, build the plugin with `FairyPlugin::default().host_signals_ready()`
 and set the `DebugReady` resource to `true` when it is; until then every command answers "not
 ready yet".
 

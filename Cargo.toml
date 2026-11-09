@@ -246,7 +246,8 @@ visual_overlays = ["visual-debugging"]
 
 [dev-dependencies]
 tokio-test = "0.4"
-bevy = { version = "0.20", features = ["default", "bevy_remote"] }
+# `debug`: `System::name()` is the full type path only with it, which `tests/machine_plate.rs` matches on.
+bevy = { version = "0.20", features = ["default", "bevy_remote", "debug"] }
 nix = { version = "0.27", features = ["signal", "process"] }
 tempfile = "3.0"
 sha2 = "0.10.9"
@@ -294,6 +295,10 @@ required-features = ["plugin-screenshot"]
 
 [[test]]
 name = "plugin_leaf"
+required-features = ["plugin"]
+
+[[test]]
+name = "machine_plate"
 required-features = ["plugin"]
 
 # The plugin's examples need the plugin's own feature set on.

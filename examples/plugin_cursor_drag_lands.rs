@@ -60,7 +60,7 @@ fn main() {
     app.add_plugins(MinimalPlugins)
         .add_plugins(bevy::input::InputPlugin)
         .init_resource::<PendingInput>()
-        // `DebuggerPlugin` inits this; an app that registers the system by hand has to as well. In
+        // `FairyPlugin` inits this; an app that registers the system by hand has to as well. In
         // Bevy 0.19 a missing `ResMut<T>` panics the system rather than skipping it, so forgetting is
         // loud rather than a cursor injection that quietly does nothing.
         .init_resource::<DebugCursor>()
